@@ -1,0 +1,14 @@
+# Virtual environment folders
+env/
+venv/
+ENV/
+.venv/
+.ENV/
+
+# Environment variables files
+*.env
+*.env.*
+
+node_modules
+
+package-lock.json
