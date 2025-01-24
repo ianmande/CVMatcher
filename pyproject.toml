@@ -1,0 +1,11 @@
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+sections = "FUTURE,STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER"
+known_third_party = "fastapi"
+known_utils = "apps"
+no_lines_before = "LOCALFOLDER"
+lines_after_imports = 2
+lines_between_types = 1
