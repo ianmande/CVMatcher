@@ -1,6 +1,20 @@
+from typing import Dict, List, Union
+
 from pydantic import BaseModel
 
 
+class SkillsMatch(BaseModel):
+    coincidencias: int
+    total_requeridas: int
+    habilidades_coincidentes: List[str]
+
+
+class ExperienceLevel(BaseModel):
+    cumple: bool
+    explicación: str
+
+
 class CVComparisonResponse(BaseModel):
-    match_percentage: float
-    extracted_text: str
+    skills_match: SkillsMatch
+    experience_level: ExperienceLevel
+    recruiter_message: str

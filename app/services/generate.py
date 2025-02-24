@@ -1,19 +1,24 @@
 import json
+import os
 
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from dotenv import load_dotenv
+from openai import OpenAI
 
-model_name = "EleutherAI/gpt-j-6B"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+load_dotenv()
 
-model = AutoModelForCausalLM.from_pretrained(
-    model_name, torch_dtype=torch.float16, device_map="auto"
-)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
-def generate_match_analysis(cv_text, job_description):
+async def generate_match_analysis(cv_text, job_description):
     prompt = f"""
-    Eres un asistente experto en selección de talento. Compara el siguiente currículum con la oferta de trabajo y devuelve una respuesta **en formato JSON válido**.
+    Eres un sistema ATS avanzado y experto en selección de talento. 
+    Analiza y compara el siguiente currículum con la oferta de trabajo, 
+    y devuelve una respuesta **en formato JSON válido** (sin texto adicional). 
+
+    En la propiedad "recruiter_message", incluye consejos personalizados 
+    para que el candidato optimice su CV y logre pasar con mayor éxito 
+    los filtros de un ATS (por ejemplo, uso de palabras clave, 
+    relevancia de la experiencia, estructura, etc.).
 
     📄 **Currículum del Candidato:**
     {cv_text}
@@ -21,7 +26,7 @@ def generate_match_analysis(cv_text, job_description):
     📌 **Descripción del Trabajo:**
     {job_description}
 
-    **📊 Respuesta en formato JSON:**  
+    **📊 Respuesta en formato JSON:**
     {{
         "skills_match": {{
             "coincidencias": [Número de habilidades coincidentes],
@@ -30,25 +35,39 @@ def generate_match_analysis(cv_text, job_description):
         }},
         "experience_level": {{
             "cumple": [true/false],
-            "explicación": "El candidato tiene más de 5 años de experiencia en frontend."
+            "explicación": "Ejemplo: El candidato tiene más de 5 años de experiencia en frontend."
         }},
-        "recruiter_message": "Hola [Nombre], me emociona postularme para esta vacante..."
+        "recruiter_message": "Aquí redacta consejos sobre cómo adaptar el CV para resaltar habilidades clave, cómo incluir palabras clave relevantes, y cualquier sugerencia adicional para optimizar la presentación según la oferta de trabajo."
     }}
-    
+
     **IMPORTANTE:** Devuelve **exclusivamente** un JSON válido sin texto adicional.
     """
 
-    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-    output = model.generate(**inputs, max_length=800)
-
-    response_text = tokenizer.decode(output[0], skip_special_tokens=True)
-
     try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Eres un sistema que genera respuestas en JSON estricto.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            response_format={"type": "json_object"},
+        )
+
+        print("IAN", response)
+
+        response_text = response.choices[0].message.content
+
         response_json = json.loads(response_text)
+
+        return response_json
+
     except json.JSONDecodeError:
         return {
-            "error": "LLaMA 2 no generó un JSON válido.",
+            "error": "La API de OpenAI no generó un JSON válido.",
             "raw_response": response_text,
         }
-
-    return response_json
+    except Exception as e:
+        return {"error": str(e)}

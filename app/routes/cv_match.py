@@ -27,7 +27,7 @@ async def compare_cv(
 
     print(result2)
 
-    if "error" in result:
-        return JSONResponse(content=result, status_code=400)
+    if "error" in result2:
+        return JSONResponse(content=result2, status_code=400)
 
-    return JSONResponse(content=result, status_code=200)
+    return JSONResponse(content=result2, status_code=200)
